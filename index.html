@@ -1191,6 +1191,7 @@
         let isTimerRunning = false;
         
         let currentStudyTab = 'active';
+        let currentBillsMonth = null; // null = otomatis ikuti bulan berjalan saat pertama dibuka
 
         const menus = [
             { id: 'dashboard', label: 'Dashboard', icon: 'fa-home', roles: ['admin', 'peserta'] },
@@ -3808,6 +3809,58 @@
                         </div>
                     </div>
                 `;
+            } else if (namaEntitasStr === 'bills') {
+                // Otomatis set ke bulan berjalan (YYYY-MM) saat pertama kali dibuka
+                const nowD = new Date();
+                const defaultMonth = `${nowD.getFullYear()}-${String(nowD.getMonth() + 1).padStart(2, '0')}`;
+                if (currentBillsMonth === null) {
+                    currentBillsMonth = defaultMonth;
+                }
+
+                const allBills = appData['bills'] || [];
+                const filteredBills = currentBillsMonth 
+                    ? allBills.filter(b => safeDate(b.due_date).startsWith(currentBillsMonth))
+                    : allBills;
+
+                let totalTagihan = 0;
+                let totalDibayar = 0;
+                let belumLunasCount = 0;
+
+                filteredBills.forEach(b => {
+                    totalTagihan += Number(b.total_amount) || 0;
+                    totalDibayar += Number(b.paid_amount) || 0;
+                    if (b.status !== 'Lunas') belumLunasCount++;
+                });
+
+                customHeaderHtml = `
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="text-xs font-bold text-gray-500 px-1"><i class="far fa-calendar-alt mr-1.5 text-primary"></i>Filter Bulan Tagihan:</span>
+                            <input type="month" id="bills-filter-month" value="${currentBillsMonth}" 
+                                onchange="currentBillsMonth = this.value; renderGenericView('bills')" 
+                                class="text-xs p-2 bg-gray-50 border border-gray-300 rounded-xl font-bold text-gray-800 outline-none focus:ring-2 focus:ring-primary cursor-pointer">
+                            <button onclick="currentBillsMonth = '${defaultMonth}'; renderGenericView('bills')" 
+                                class="bg-primary text-white hover:bg-blue-800 px-3 py-2 rounded-xl text-xs font-bold transition shadow-sm cursor-pointer">
+                                Bulan Ini
+                            </button>
+                            <button onclick="currentBillsMonth = ''; renderGenericView('bills')" 
+                                class="${currentBillsMonth === '' ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'} px-3 py-2 rounded-xl text-xs font-bold transition shadow-sm cursor-pointer">
+                                Semua Bulan
+                            </button>
+                        </div>
+                        <div class="flex flex-wrap gap-3 text-xs font-bold w-full md:w-auto justify-end">
+                            <div class="bg-blue-50 text-blue-800 px-3 py-2 rounded-xl border border-blue-100">
+                                Total: <span class="font-mono">${formatRp(totalTagihan)}</span>
+                            </div>
+                            <div class="bg-green-50 text-green-800 px-3 py-2 rounded-xl border border-green-100">
+                                Dibayar: <span class="font-mono">${formatRp(totalDibayar)}</span>
+                            </div>
+                            <div class="bg-red-50 text-red-700 px-3 py-2 rounded-xl border border-red-100">
+                                Belum Lunas: <span class="font-mono">${belumLunasCount} Tagihan</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
             }
             document.getElementById('generic-custom-header').innerHTML = customHeaderHtml;
 
@@ -3832,7 +3885,12 @@
                 openGenericModal(namaEntitasStr);
             };
             
-            const daftarDataEntitas = appData[namaEntitasStr] || []; 
+           let daftarDataEntitas = appData[namaEntitasStr] || []; 
+            if (namaEntitasStr === 'bills' && currentBillsMonth) {
+                daftarDataEntitas = daftarDataEntitas
+                    .filter(item => safeDate(item.due_date).startsWith(currentBillsMonth))
+                    .sort((a, b) => new Date(safeDate(a.due_date)) - new Date(safeDate(b.due_date)));
+            }
             let susunanTabelHtml = `
                 <div class="overflow-x-auto w-full custom-scrollbar">
                     <table class="w-full text-left text-sm font-medium">
