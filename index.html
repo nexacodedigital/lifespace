@@ -1251,7 +1251,7 @@
                     { key: 'bill_name', label: 'Nama Tagihan' }, 
                     { key: 'total_amount', label: 'Total Jumlah', render: formatRp }, 
                     { key: 'paid_amount', label: 'Telah Dibayar', render: formatRp }, 
-                    { key: 'due_date', label: 'Tanggal Jatuh Tempo', type: 'date', req: true },
+                    { key: 'due_date', label: 'Jatuh Tempo', render: formatDate },
                     { 
                         key: 'status', 
                         label: 'Status', 
@@ -1265,7 +1265,7 @@
                     { key: 'bill_name', label: 'Nama Tagihan', type: 'text', req: true }, 
                     { key: 'total_amount', label: 'Total Jumlah (Rp)', type: 'number', req: true }, 
                     { key: 'paid_amount', label: 'Telah Dibayar (Rp)', type: 'number' }, 
-                    { key: 'due_date', label: 'Tanggal Jatuh Tempo', type: 'date' }, 
+                    { key: 'due_date', label: 'Tanggal Jatuh Tempo', type: 'date', req: true }, 
                     { key: 'status', label: 'Status', type: 'select', options: ['Belum', 'Lunas'] }
                 ] 
             },
@@ -4233,20 +4233,6 @@
                     );
                     return;
                 }
-
-                    // Jika sedang mengedit item pertama lalu di-set berulang, hapus item lama dari lokal sebelum tambah massal
-                    if (idDitujuStr && appData[namaEntitasStr]) {
-                        appData[namaEntitasStr] = appData[namaEntitasStr].filter(x => x.id !== idDitujuStr);
-                    }
-
-                    saveMassToServer(
-                        namaEntitasStr,
-                        itemsToSave,
-                        `Berhasil membuat ${itemsToSave.length} jadwal berulang (${labelFrekuensiMap[repeatFreq]})!`
-                    );
-                    return;
-                }
-
                 // Pastikan hari otomatis selaras dengan tanggal jika tidak berulang di Study
                 if (namaEntitasStr === 'study' && wadahObjek.date) {
                     wadahObjek.day = getDayNameIndo(wadahObjek.date);
